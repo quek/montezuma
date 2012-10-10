@@ -11,9 +11,10 @@
       (test standard-analyzer-5 (next-token token-stream) (make-token "she" 44 49) #'token=)
       (test standard-analyzer-6 (next-token token-stream) (make-token "job@dot" 60 67) #'token=)
       (test standard-analyzer-7 (next-token token-stream) (make-token "ibm" 68 74) #'token=)
-      (test standard-analyzer-8 (next-token token-stream) (make-token "the" 75 78) #'token=)
-      (test standard-analyzer-9 (next-token token-stream) (make-token "an" 79 81) #'token=)
-      (test standard-analyzer-10 (next-token token-stream) (make-token "and" 82 85) #'token=)
-      (test standard-analyzer-11 (next-token token-stream) (make-token "their" 86 91) #'token=)
+      ;; 'the', 'an', 'and' and 'their' are stop word.
+      ;; (test standard-analyzer-8 (next-token token-stream) (make-token "the" 75 78) #'token=)
+      ;; (test standard-analyzer-9 (next-token token-stream) (make-token "an" 79 81) #'token=)
+      ;; (test standard-analyzer-10 (next-token token-stream) (make-token "and" 82 85) #'token=)
+      ;; (test standard-analyzer-11 (next-token token-stream) (make-token "their" 86 91) #'token=)
       (test standard-analyzer-12 (next-token token-stream) nil))))
 
