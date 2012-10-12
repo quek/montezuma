@@ -4,14 +4,14 @@
 (defvar *directory-cache*
   (make-hash-table :test #'equal))
 
-(defun make-fs-directory (path &key create-p)
+(defun make-fs-directory (path &key create-p (class 'mmap-directory))
   (setf path (cl-fad:pathname-as-directory path))
   (when create-p
     (ensure-directories-exist path))
   (let ((truename (truename path)))
     (let ((dir (gethash truename *directory-cache*)))
       (unless dir
-	(setf dir (make-instance 'fs-directory :path path))
+	(setf dir (make-instance class :path path))
 	(setf (gethash truename *directory-cache*) dir))
       (when create-p
 	(refresh dir))

@@ -20,7 +20,7 @@
     :licence "MIT/Expat"
     :description "Montezuma is a port of the Lucene text search engine library."
     :long-description "Montezuma is a port of the Ferret text search engine library, which is itself a port of the Lucene engine."
-    :depends-on (#:cl-ppcre #:cl-fad #:babel)
+    :depends-on (#:cl-ppcre #:cl-fad #:babel #:osicat)
     :components
     ((:module "src"
 	:components
@@ -46,7 +46,8 @@
 			       (:file "index-io"            :depends-on ("api"))
 			       (:file "buffered-index-io"   :depends-on ("index-io"))
 			       (:file "ram-store"           :depends-on ("buffered-index-io" "directory"))
-			       (:file "fs-store"            :depends-on ("buffered-index-io" "directory")))
+			       (:file "fs-store"            :depends-on ("buffered-index-io" "directory"))
+                               (:file "mmap-store"          :depends-on ("fs-store")))
 		  :depends-on ("package" "util"))
 	 (:module "document"
 		  :components ((:file "field")
