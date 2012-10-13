@@ -23,7 +23,8 @@
       :merge-factor
       :min-merge-docs
       :max-merge-docs
-      :info-stream)))
+      :info-stream
+      :directory-class)))
 
 (defun index-options-list-p (list)
   (do ((options list (cddr options)))
@@ -69,9 +70,10 @@
    (open-p :initform T)
    (options)
    (qp :initform nil)))
-   
 
-(defmethod initialize-instance :after ((self index) &rest args &key &allow-other-keys)
+
+(defmethod initialize-instance :after ((self index) &rest args
+                                       &key (directory-class 'mmap-directory) &allow-other-keys)
   (with-slots (options) self
     (check-type args index-options-list)
     (setf options (copy-list args))
@@ -92,7 +94,8 @@
       (cond ((get-index-option options :path)
 	     (handler-case
 		 (setf dir (make-fs-directory (get-index-option options :path)
-					      :create-p (get-index-option options :create-p)))
+					      :create-p (get-index-option options :create-p)
+                                              :class directory-class))
 	       (error () (setf dir (make-fs-directory (get-index-option options :path)
 						      :create-p (get-index-option options :create-if-missing-p)))))
 	     (setf (get-index-option options :close-directory-p) T))
