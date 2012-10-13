@@ -234,7 +234,7 @@
 	nil
 	(progn
 	  (when (null (bytes norm))
-	    (let ((bytes (make-array (max-doc self) :initial-element #\space)))
+	    (let ((bytes (make-array (max-doc self) :element-type '(unsigned-byte 8))))
 	      (get-norms-into self field bytes 0)
 	      (setf (bytes norm) bytes)))
 	  (bytes norm)))))

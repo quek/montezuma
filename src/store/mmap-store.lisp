@@ -7,7 +7,8 @@
 (defclass mmap-index-input (index-input)
   ((addr)
    (size :reader size :type 'fixnum)
-   (position :initform 0 :type 'fixnum)))
+   (position :initform 0 :type 'fixnum)
+   (is-clone-p :initform nil)))
 
 
 (defmethod open-input ((self mmap-directory) file)
@@ -26,6 +27,12 @@
                                          fd
                                          0)))
       (osicat-posix:close fd))))
+
+(defmethod initialize-copy :after ((self mmap-index-input) other)
+  (declare (ignore other))
+  (with-slots (is-clone-p) self
+    (setf is-clone-p t)))
+
 
 (defmethod read-byte ((self mmap-index-input))
   (with-slots (addr position) self
@@ -49,9 +56,18 @@
     (setf position pos)))
 
 (defmethod close ((self mmap-index-input))
-  (with-slots (addr size) self
-    (osicat-posix:munmap addr size)))
+  (with-slots (addr size is-clone-p) self
+    (unless is-clone-p
+     (osicat-posix:munmap addr size))))
 
 (defmethod size ((self mmap-index-input))
   (with-slots (size) self
     size))
+
+(defmethod build-slice ((self mmap-index-input) offset length)
+  (let ((clone (clone self)))
+    (with-slots (addr size position) clone
+      (cffi:incf-pointer addr offset)
+      (setf size length)
+      (setf position 0)
+      clone)))

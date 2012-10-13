@@ -289,7 +289,7 @@
 	    (unwind-protect
 		 (dosequence (reader readers)
 		   (let* ((max-doc (max-doc reader))
-			  (input (make-array max-doc)))
+			  (input (make-array max-doc :element-type '(unsigned-byte 8))))
 		     (get-norms-into reader (field-name fi) input 0)
 		     (dotimes (k max-doc)
 		       (unless (deleted-p reader k)

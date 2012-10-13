@@ -1,5 +1,7 @@
 (in-package #:montezuma)
 
+(defgeneric build-slice (index-input offset length))
+
 (defclass index-input ()
   ())
 

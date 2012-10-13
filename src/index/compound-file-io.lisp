@@ -49,10 +49,7 @@
     (let ((entry (table-value entries id)))
       (if (null entry)
 	  (error "No sub-file with id ~S found in ~S" id self)
-	  (make-instance 'cs-index-input
-			 :base stream
-			 :file-offset (offset entry)
-			 :size (size entry))))))
+          (build-slice stream (offset entry) (size entry))))))
 
 (defmethod files ((self compound-file-reader))
   (with-slots (entries) self

@@ -160,3 +160,9 @@
 
       (setf buffer-start start)
       (setf buffer-position 0))))
+
+(defmethod build-slice ((self buffered-index-input) offset length)
+  (make-instance 'cs-index-input
+                 :base self
+                 :file-offset offset
+                 :size length))
