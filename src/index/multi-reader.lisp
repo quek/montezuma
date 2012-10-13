@@ -111,7 +111,7 @@
 	  bytes
 	  (if (not (has-norms-p self field))
 	      (fake-norms self)
-	      (let ((bytes (make-array (max-doc self))))
+	      (let ((bytes (make-array (max-doc self) :element-type '(unsigned-byte 8))))
 		(dosequence (sub-reader sub-readers :index i)
 		  (get-norms-into sub-reader field bytes (aref starts i)))
 		(setf (table-value norms-cache field) bytes)))))))

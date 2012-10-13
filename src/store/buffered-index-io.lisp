@@ -80,7 +80,7 @@
 
 (defmethod initialize-instance :after ((self buffered-index-input) &key)
   (with-slots (buffer buffer-size) self
-    (setf buffer (make-array (list buffer-size)))))
+    (setf buffer (make-array (list buffer-size) :element-type '(unsigned-byte 8)))))
 
 
 (defmethod initialize-copy :after ((self buffered-index-input) o)

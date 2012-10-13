@@ -180,7 +180,7 @@
 	   (let ((start-ptr (pos os))
 		 (remainder (size is))
 		 (length (size is))
-		 (buffer (make-array *default-buffer-size*)))
+		 (buffer (make-array *default-buffer-size* :element-type '(unsigned-byte 8))))
 	     (while (> remainder 0)
 	       (let ((len (min remainder *default-buffer-size*)))
 		 (read-bytes is buffer 0 len)
