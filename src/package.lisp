@@ -25,13 +25,15 @@
 ;; of things to revisit.
 
 (defpackage #:montezuma
-  (:shadow #:directory #:read-byte #:write-byte #:write-string 
+  (:shadow #:directory #:read-byte #:write-byte #:write-string
 	   #:close #:delete-file #:rename-file #:count #:search
 	   #:merge #:file-length #:read #:write #:optimize
 	   #:sort)
   (:use #:common-lisp #:montezuma.parser)
-  (:export 
+  (:export
    #:make-fs-directory
+   #:fs-directory
+   #:mmap-directory
    #:standard-analyzer
    #:whitespace-analyzer
    #:index-writer
