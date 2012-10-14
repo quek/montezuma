@@ -29,9 +29,12 @@
 
 
 (defmethod read-vint ((self index-input))
+  (declare (cl:optimize (speed 3) (safety 0)))
   (let* ((b (read-byte self))
 	 (i (logand b #x7f))
 	 (shift 7))
+    (declare (fixnum b shift)
+             (integer i))
     (loop while (not (zerop (logand b #x80)))
 	 do
 	 (setf b (read-byte self))
@@ -45,15 +48,19 @@
 
 (defmethod read-string ((self index-input))
   (let* ((length (read-vint self))
-	 (chars (make-array (list length))))
+	 (chars (make-array (list length) :element-type '(unsigned-byte 8))))
     (read-chars self chars 0 length)
     (bytes-to-string chars)))
 
 (defmethod read-chars ((self index-input) buffer start length)
+  (declare (type fixnum start length)
+           (type (simple-array (unsigned-byte 8) (*)) buffer))
   (when (< (array-dimension buffer 0) (+ start length))
     (error "buffer too small"))
   (dotimes (i length)
     (setf (elt buffer (+ i start)) (read-byte self))))
+
+(defmethod read-string-with-length ((self index-input) length))
 
 (defclass index-output ()
   ())

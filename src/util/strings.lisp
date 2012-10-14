@@ -1,12 +1,13 @@
 (in-package #:montezuma)
 
+(declaim (inline bytes-to-string))
 (defun bytes-to-string (sequence &key (start 0) (end (length sequence)))
   "Converts a sequence of octets to a string using the implementation's
 default character encoding."
-   (let ((s (coerce (subseq sequence start end) '(vector (unsigned-byte 8)))))
-     (babel:octets-to-string s)))
+  (babel:octets-to-string sequence :start start :end end))
 
 
+(declaim (inline string-to-bytes))
 (defun string-to-bytes (string &key (start 0) end)
   "Converts a string to a sequence of octets using the implementation's
 default character encoding.

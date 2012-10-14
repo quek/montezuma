@@ -35,9 +35,10 @@
 
 
 (defmethod read-byte ((self mmap-index-input))
+  (declare (cl:optimize (speed 3) (safety 0)))
   (with-slots (addr position) self
     (prog1 (cffi:mem-ref addr :unsigned-char position)
-      (incf position))))
+      (incf (the fixnum position)))))
 
 (defmethod read-bytes ((self mmap-index-input) buffer offset length)
   (declare (fixnum offset length))
