@@ -1,20 +1,20 @@
 (in-package #:montezuma)
 
-(defclass term-buffer ()
-  ((text-buf :initform (make-adjustable-string 0))
-   (text-length :initform -1 :reader text-length)
-   (field :initform nil :reader field)
-   (term :initform nil)
-   (text-cache :initform nil)))
+(let ((default-buffer-size 15))
+  (defclass term-buffer ()
+    ((buffer :initform (make-array default-buffer-size :element-type '(unsigned-byte 8)))
+     (position :initform 0)
+     (buffer-size :initform default-buffer-size)
+     (field :initform nil :reader field)
+     (term :initform nil)
+     (text-cache :initform nil))))
 
 (defmethod print-object ((self term-buffer) stream)
   (print-unreadable-object (self stream :type T :identity T)
-    (with-slots (field text-buf text-length) self
+    (with-slots (field buffer position) self
       (format stream "field:~S text:~S"
-	      field 
-	      (if (not (< text-length 0))
-		  (subseq text-buf 0 text-length)
-		  nil)))))
+	      field
+              (text self)))))
 
 (defmethod initialize-copy :after ((self term-buffer) other)
   (set-from-term-buffer self other))
@@ -23,25 +23,22 @@
 (defgeneric text (term-buffer))
 
 (defmethod text ((self term-buffer))
-  (with-slots (text-cache text-buf text-length) self
+  (with-slots (text-cache buffer position) self
     (if text-cache
 	text-cache
-	(setf text-cache (subseq text-buf 0 text-length)))))
+	(setf text-cache (bytes-to-string buffer :start 0 :end position)))))
 
 (defgeneric read-term-buffer (term-buffer input field-infos))
 
 (defmethod read-term-buffer ((self term-buffer) input field-infos)
-  (with-slots (term text-buf text-cache text-length field) self
+  (with-slots (term buffer position text-cache field) self
     (setf term nil)
     (let* ((start (read-vint input))
 	   (length (read-vint input))
 	   (total-length (+ start length)))
       (ensure-text-buf-length self total-length)
-      (let ((buf (string-to-bytes text-buf :start 0 :end total-length)))
-	(read-chars input buf start length)
-	(let ((s (bytes-to-string buf)))
-          (setf text-length (length s))
-	  (setf text-buf (make-adjustable-string (length s) s))))
+      (read-chars input buffer start length)
+      (setf position total-length)
       (setf field (field-name (get-field field-infos (read-vint input)))))
     (setf text-cache nil))
   self)
@@ -49,18 +46,19 @@
 (defgeneric ensure-text-buf-length (term-buffer len))
 
 (defmethod ensure-text-buf-length ((self term-buffer) len)
-  (with-slots (text-buf text-cache) self
-    (unless (>= (length text-buf) len)
-      (let ((new-buf (make-adjustable-string (+ len 10))))
-	(replace new-buf text-buf :start2 0 :end2 (length text-buf))
+  (with-slots (buffer position buffer-size text-cache) self
+    (unless (>= buffer-size len)
+      (let* ((new-size (+ len 10))
+             (new-buf (make-array new-size :element-type '(unsigned-byte 8))))
+	(replace new-buf buffer :start2 0 :end2 position)
 	(setf text-cache nil)
-	(setf text-buf new-buf)))))
+	(setf buffer new-buf)
+        (setf buffer-size new-size)))))
 
 (defmethod reset ((self term-buffer))
-  (with-slots (field text-buf text-cache text-length term) self
+  (with-slots (field position text-cache term) self
     (setf field nil
-	  text-buf (make-adjustable-string 0)
-	  text-length 0
+          position 0
 	  text-cache nil
 	  term nil)))
 
@@ -68,13 +66,14 @@
 (defmethod (setf term) (term (self term-buffer))
   (if (null term)
       (progn (reset self) nil)
-      (with-slots (text-buf text-cache text-length field) self
-	(setf text-buf (make-adjustable-string (length (term-text term)) (term-text term)))
-	(setf text-length (length text-buf))
-	(setf text-cache nil)
+      (with-slots (buffer buffer-size position text-cache field) self
+        (setf buffer (string-to-bytes (term-text term)))
+        (setf buffer-size (length buffer))
+        (setf position buffer-size)
+        (setf text-cache nil)
 	(setf field (term-field term))
 	(setf (slot-value self 'term) term))))
-      
+
 
 (defgeneric to-term (term-buffer))
 
@@ -84,58 +83,51 @@
 	nil
 	(if (not (null term))
 	    term
-	    (setf term (make-term field (subseq text-buf 0 text-length)))))))
+	    (setf term (make-term field (text self)))))))
 
 (defmethod term ((self term-buffer))
   (to-term self))
 
 (defun term-buffer-compare (tb1 tb2)
+  (declare (cl:optimize (speed 3) (safety 0)))
   (let ((f1 (field tb1))
 	(f2 (field tb2)))
     (if (string= f1 f2)
-	(string-compare (slot-value tb1 'text-buf)
-			(slot-value tb2 'text-buf)
-			:start1 0 :end1 (slot-value tb1 'text-length)
-			:start2 0 :end2 (slot-value tb2 'text-length))
-	(string-compare f1 f2))))
+        (let ((buffer1 (slot-value tb1 'buffer))
+              (buffer2 (slot-value tb2 'buffer))
+              (len1 (slot-value tb1 'position))
+              (len2 (slot-value tb2 'position)))
+          (declare (type (simple-array (unsigned-byte 8) (*)) buffer1 buffer2)
+                   (type fixnum len1 len2))
+          (loop for a fixnum across buffer1
+                for b fixnum across buffer2
+                repeat (min len1 len2)
+                do (cond ((< a b)
+                          (return-from term-buffer-compare -1))
+                         ((> a b)
+                          (return-from term-buffer-compare 1))))
+          (cond ((= len1 len2) 0)
+                ((< len1 len2) -1)
+                (t 1)))
+        (string-compare f1 f2))))
 
 (defun term-buffer> (tb1 tb2)
-  (let ((f1 (field tb1))
-	(f2 (field tb2)))
-    (if (string= f1 f2)
-	(string> (slot-value tb1 'text-buf)
-		 (slot-value tb2 'text-buf)
-		 :start1 0 :end1 (slot-value tb1 'text-length)
-		 :start2 0 :end2 (slot-value tb2 'text-length))
-	(string> f1 f2))))
+  (= (term-buffer-compare tb1 tb2) 1))
 
 (defun term-buffer< (tb1 tb2)
-  (let ((f1 (field tb1))
-	(f2 (field tb2)))
-  (if (string= f1 f2)
-      (string< (slot-value tb1 'text-buf)
-	       (slot-value tb2 'text-buf)
-	       :start1 0 :end1 (slot-value tb1 'text-length)
-	       :start2 0 :end2 (slot-value tb2 'text-length))
-      (string< f1 f2))))
+  (= (term-buffer-compare tb1 tb2) -1))
 
 (defun term-buffer= (tb1 tb2)
-  (let ((len1 (slot-value tb1 'text-length))
-	(len2 (slot-value tb2 'text-length)))
-    (and (= len1 len2)
-	 (string= (slot-value tb1 'text-buf)
-		  (slot-value tb2 'text-buf)
-		  :start1 0 :end1 len1
-		  :start2 0 :end2 len2)
-	 (string= (field tb1) (field tb2)))))
+  (zerop (term-buffer-compare tb1 tb2)))
 
 (defgeneric set-from-term-buffer (term-buffer other))
 (defmethod set-from-term-buffer ((self term-buffer) other)
-  (with-slots (text-length text-buf text-cache field term) self
-    (setf text-length (slot-value other 'text-length))
+  (with-slots (buffer buffer-size position text-cache field term) self
+    (setf buffer-size (slot-value other 'buffer-size))
+    (setf position (slot-value other 'position))
     (setf text-cache nil)
-    (when (slot-value other 'text-buf)
-      (setf text-buf (clone (slot-value other 'text-buf))))
+    (when (slot-value other 'buffer)
+      (setf buffer (clone (slot-value other 'buffer))))
     (setf field (slot-value other 'field))
     (setf term (slot-value other 'term))))
 
@@ -144,7 +136,5 @@
   (term-compare t1 (to-term t2)))
 
 (defmethod term= ((t1 term) (t2 term-buffer))
-  (and (string= (term-text t1) (slot-value t2 'text-buf)
-		:start2 0 :end2 (slot-value t2 'text-length))
-       (string= (term-field t1) (field t2))))
-		  
+  (and (string= (term-field t1) (field t2))
+       (string= (term-text t1) (text t2))))
