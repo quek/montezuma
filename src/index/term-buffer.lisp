@@ -1,6 +1,6 @@
 (in-package #:montezuma)
 
-(let ((default-buffer-size 15))
+(let ((default-buffer-size 16))
   (defclass term-buffer ()
     ((buffer :initform (make-array default-buffer-size :element-type '(unsigned-byte 8)))
      (position :initform 0)

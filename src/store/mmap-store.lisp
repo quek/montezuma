@@ -6,8 +6,8 @@
 
 (defclass mmap-index-input (index-input)
   ((addr)
-   (size :reader size :type 'fixnum)
-   (position :initform 0 :type 'fixnum)
+   (size :reader size :type fixnum)
+   (position :initform 0 :type fixnum)
    (is-clone-p :initform nil)))
 
 

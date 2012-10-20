@@ -105,8 +105,13 @@
    (index-enum)
    (index-terms :initform nil)
    (index-infos :initform nil)
-   (index-pointers :initform nil)
-   (cached-term-enum :initform nil)))
+   (index-pointers :initform nil)))
+
+(defmethod cached-term-enum ((self term-infos-reader))
+  (getf (thread-local self) 'cached-term-enum))
+
+(defmethod (setf cached-term-enum) (value (self term-infos-reader))
+  (setf (getf (thread-local self) 'cached-term-enum) value))
 
 (defmethod initialize-instance :after ((self term-infos-reader) &key)
   (with-slots (orig-enum size directory segment field-infos index-enum skip-interval) self
@@ -189,8 +194,8 @@
 (defgeneric enum (term-infos-reader))
 
 (defmethod enum ((self term-infos-reader))
-  ;; FIXME use cached thread-local storage?
-  (with-slots (cached-term-enum) self
+  ;; FIXME use cached thread-local storage? => fixed?
+  (with-accessors ((cached-term-enum cached-term-enum)) self
     (when (null cached-term-enum)
       (setf cached-term-enum (terms self)))
     cached-term-enum))
