@@ -65,6 +65,10 @@
   (with-slots (size) self
     size))
 
+(defmethod pos ((self mmap-index-input))
+  (with-slots (position) self
+    position))
+
 (defmethod build-slice ((self mmap-index-input) offset length)
   (let ((clone (clone self)))
     (with-slots (addr size position) clone
