@@ -237,7 +237,7 @@
 	      (test term-infos-small-writer-4 (read-int tis-file)   16)      ;; skip interval
 	      (test term-infos-small-writer-5 (read-vint tis-file)   0)      ;; string-equal length
 	      (test term-infos-small-writer-6 (read-vint tis-file)   6)      ;; rest of string length
-	      (let ((author (make-array 6)))
+	      (let ((author (make-array 6 :element-type '(unsigned-byte 8))))
 		(read-chars tis-file author 0 6)
 		(test term-infos-small-writer-7 (bytes-to-string author) "Martel" #'string=))
 	      (test term-infos-small-writer-8 (read-vint tis-file)   0)      ;; field number
@@ -246,7 +246,7 @@
 	      (test term-infos-small-writer-11 (read-vlong tis-file) 0)      ;; prox pointer difference
 	      (test term-infos-small-writer-12 (read-vint tis-file)  4)      ;; string-equal length
 	      (test term-infos-small-writer-13 (read-vint tis-file)  2)      ;; rest of string length
-	      (let ((author (make-array 2)))
+	      (let ((author (make-array 2 :element-type '(unsigned-byte 8))))
 		(read-chars tis-file author 0 2)
 		(test term-infos-small-writer-14 (bytes-to-string author) "in" #'string=))
 	      (test term-infos-small-writer-15 (read-vint tis-file)  0)      ;; field number
@@ -255,7 +255,7 @@
 	      (test term-infos-small-writer-18 (read-vlong tis-file) 1)      ;; prox pointer difference
 	      (test term-infos-small-writer-19 (read-vint tis-file)  0)      ;; string-equal length
 	      (test term-infos-small-writer-20 (read-vint tis-file) 10)      ;; rest of string length
-	      (let ((title (make-array 10)))
+	      (let ((title (make-array 10 :element-type '(unsigned-byte 8))))
 		(read-chars tis-file title 0 10)
 		(test term-infos-small-writer-21 (bytes-to-string title) "Life of Pi" #'string=))
 	      (test term-infos-small-writer-22 (read-vint tis-file)  1)      ;; field number
@@ -264,7 +264,7 @@
 	      (test term-infos-small-writer-25 (read-vlong tis-file) 1)      ;; prox pointer difference
 	      (test term-infos-small-writer-26 (read-vint tis-file)  6)      ;; string-equal length
 	      (test term-infos-small-writer-27 (read-vint tis-file) 10)      ;; rest of string length
-	      (let ((title (make-array 10)))
+	      (let ((title (make-array 10 :element-type '(unsigned-byte 8))))
 		(read-chars tis-file title 0 10)
 		(test term-infos-small-writer-28 (bytes-to-string title) "n the edge" #'string=))
 	      (test term-infos-small-writer-29 (read-int tii-file) +term-infos-format+)

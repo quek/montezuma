@@ -60,7 +60,7 @@
 		    (if compressed
 			(progn
 			  (setf store :compress)
-			  (let ((b (make-array (read-vint fields-stream))))
+			  (let ((b (make-array (read-vint fields-stream) :element-type '(unsigned-byte 8))))
 			    (read-bytes fields-stream b 0 (length b))
 			    (setf data (bytes-to-string (uncompress b)))))
                         (setf data (read-string fields-stream)))

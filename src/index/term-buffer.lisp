@@ -28,6 +28,9 @@
 	text-cache
 	(setf text-cache (bytes-to-string buffer :start 0 :end position)))))
 
+(defmethod text-length ((self term-buffer))
+  (length (text self)))
+
 (defgeneric read-term-buffer (term-buffer input field-infos))
 
 (defmethod read-term-buffer ((self term-buffer) input field-infos)
