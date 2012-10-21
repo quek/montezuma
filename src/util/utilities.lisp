@@ -24,28 +24,29 @@
 ;;; thread local
 ;;; ---------------------------------------------------------------------------
 
-(defvar *thread-local* nil)
+(defvar *thread-local* (make-hash-table :synchronized t :weakness :key))
 
 (defun thread-local (key)
-  (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key))
+  "sb-thread:symbol-value-in-thread がうまく動かないみたい。"
+  ;; (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key)
+  (getf (gethash sb-thread:*current-thread* *thread-local*) key))
 
 (defun (setf thread-local) (value key)
-  (setf (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key)
-        value))
+  "sb-thread:symbol-value-in-thread がうまく動かないみたい。"
+  ;; (setf (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key) value))
+  (setf (getf (gethash sb-thread:*current-thread* *thread-local*) key) value))
 
 #|
 (sb-thread:make-thread (lambda ()
-                         (let ((*thread-local* nil))
-                          (print (thread-local :foo))
-                          (sleep 10)
-                          (setf (thread-local :foo) 111)
-                          (print (thread-local :foo)))))
+                         (print (thread-local :foo))
+                         (sleep 10)
+                         (setf (thread-local :foo) 111)
+                         (print (thread-local :foo))))
 (sb-thread:make-thread (lambda ()
-                         (let ((*thread-local* nil))
-                          (print (thread-local :foo))
-                          (sleep 10)
-                          (setf (thread-local :foo) 222)
-                          (print (thread-local :foo)))))
+                         (print (thread-local :foo))
+                         (sleep 10)
+                         (setf (thread-local :foo) 222)
+                         (print (thread-local :foo))))
 
 (progn
   (print (thread-local :foo))
