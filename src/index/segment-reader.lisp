@@ -7,7 +7,7 @@
    (deleted-docs-dirty-p)
    (undelete-all-p :initform NIL)
    (field-infos :reader field-infos)
-   (fields-reader)
+   (fields-reader-orig)
    (term-infos :reader term-infos)
    (freq-stream :reader freq-stream)
    (prox-stream :reader prox-stream)
@@ -24,7 +24,7 @@
 	      segment (num-docs self) (length deleted-docs) (size field-infos)))))
 
 (defmethod initialize-instance :after ((self segment-reader) &key info)
-  (with-slots (segment directory deleted-docs field-infos fields-reader
+  (with-slots (segment directory deleted-docs field-infos fields-reader-orig
 		       cfs-reader term-infos deleted-docs-dirty-p freq-stream
 		       tv-reader-orig prox-stream norms norms-dirty-p) self
     (setf segment (segment-info-name info))
@@ -37,7 +37,7 @@
       (setf field-infos (make-instance 'field-infos
 				       :directory dir
 				       :name (add-file-extension segment "fnm")))
-      (setf fields-reader (make-instance 'fields-reader
+      (setf fields-reader-orig (make-instance 'fields-reader
 					 :directory dir
 					 :segment segment
 					 :field-infos field-infos))
@@ -59,6 +59,12 @@
 					    :segment segment
 					    :field-infos field-infos))))))
 
+(defmethod fields-reader ((self segment-reader))
+  (with-slots (fields-reader-orig) self
+    (let ((fields-reader (thread-local self 'fields-reader)))
+      (if fields-reader
+          fields-reader
+          (setf (thread-local self 'fields-reader) (clone fields-reader-orig))))))
 
 (defun get-segment-reader (segment-info &key infos close-directory-p)
   (make-instance 'segment-reader
@@ -88,11 +94,11 @@
 	  undelete-all-p NIL)))
 
 (defmethod do-close ((self segment-reader))
-  (with-slots (fields-reader term-infos freq-stream prox-stream
+  (with-slots (fields-reader-orig term-infos freq-stream prox-stream
 			     cached-tv-reader tv-reader-orig cfs-reader) self
     ;; FIXME some thread specific cache clearing?
     (setf cached-tv-reader nil)
-    (close fields-reader)
+    (close fields-reader-orig)
     (close term-infos)
     (when freq-stream (close freq-stream))
     (when prox-stream (close prox-stream))
@@ -147,7 +153,7 @@
 (defmethod get-document ((self segment-reader) n)
   (when (deleted-p self n)
     (error "Document ~S in ~S has been deleted." n self))
-  (get-document (slot-value self 'fields-reader) n))
+  (get-document (fields-reader self) n))
 
 (defmethod deleted-p ((self segment-reader) n)
   (let ((deleted-docs (slot-value self 'deleted-docs)))
@@ -175,7 +181,7 @@
     n))
 
 (defmethod max-doc ((self segment-reader))
-  (size (slot-value self 'fields-reader)))
+  (size (fields-reader self)))
 
 (defmethod get-field-names ((self segment-reader) &optional (field-option T))
   (check-type field-option (member T :unindexed :indexed :indexed-no-term-vector :term-vector

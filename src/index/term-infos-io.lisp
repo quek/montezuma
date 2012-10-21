@@ -108,10 +108,10 @@
    (index-pointers :initform nil)))
 
 (defmethod cached-term-enum ((self term-infos-reader))
-  (getf (thread-local self) 'cached-term-enum))
+  (thread-local self 'cached-term-enum))
 
 (defmethod (setf cached-term-enum) (value (self term-infos-reader))
-  (setf (getf (thread-local self) 'cached-term-enum) value))
+  (setf (thread-local self 'cached-term-enum) value))
 
 (defmethod initialize-instance :after ((self term-infos-reader) &key)
   (with-slots (orig-enum size directory segment field-infos index-enum skip-interval) self

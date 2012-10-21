@@ -26,32 +26,14 @@
 
 (defvar *thread-local* (make-hash-table :synchronized t :weakness :key))
 
-(defun thread-local (key)
-  "sb-thread:symbol-value-in-thread がうまく動かないみたい。"
-  ;; (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key)
-  (getf (gethash sb-thread:*current-thread* *thread-local*) key))
+(defun thread-local (instance variable)
+  (let ((thread-local (gethash sb-thread:*current-thread* *thread-local*)))
+    (when thread-local
+      (getf (gethash instance thread-local) variable))))
 
-(defun (setf thread-local) (value key)
-  "sb-thread:symbol-value-in-thread がうまく動かないみたい。"
-  ;; (setf (getf (sb-thread:symbol-value-in-thread '*thread-local* sb-thread:*current-thread* nil) key) value))
-  (setf (getf (gethash sb-thread:*current-thread* *thread-local*) key) value))
-
-#|
-(sb-thread:make-thread (lambda ()
-                         (print (thread-local :foo))
-                         (sleep 10)
-                         (setf (thread-local :foo) 111)
-                         (print (thread-local :foo))))
-(sb-thread:make-thread (lambda ()
-                         (print (thread-local :foo))
-                         (sleep 10)
-                         (setf (thread-local :foo) 222)
-                         (print (thread-local :foo))))
-
-(progn
-  (print (thread-local :foo))
-  (print (setf (thread-local :foo) :bar))
-  (print (thread-local :foo))
-  (print (setf (thread-local :hoge) :baha))
-  (print (thread-local :hoge)))
-|#
+(defun (setf thread-local) (value instance variable)
+  (let ((thread-local (gethash sb-thread:*current-thread* *thread-local*)))
+    (unless thread-local
+      (setf thread-local (make-hash-table :weakness :key))
+      (setf (gethash sb-thread:*current-thread* *thread-local*) thread-local))
+    (setf (getf (gethash instance thread-local) variable) value)))
