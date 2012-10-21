@@ -40,7 +40,7 @@
 		  (tokenize (logbitp +field-is-tokenized-bit+ bits))
 		  (binary (logbitp +field-is-binary-bit+ bits)))
 	      (if binary
-		  (let ((b (make-array (read-vint fields-stream))))
+		  (let ((b (make-array (read-vint fields-stream) :element-type '(unsigned-byte 8))))
 		    (read-bytes fields-stream b 0 (length b))
 		    (if compressed
 			(add-field doc
