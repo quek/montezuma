@@ -20,6 +20,12 @@
     (setf index-stream (open-segment-file directory segment *fdx-extension* :input))
     (setf size (floor (size index-stream) 8))))
 
+(defmethod initialize-copy :after ((self fields-reader) other)
+  (declare (ignore other))
+  (with-slots (fields-stream index-stream) self
+    (setf fields-stream (clone fields-stream)
+          index-stream (clone index-stream))))
+
 (defmethod close ((self fields-reader))
   (with-slots (fields-stream index-stream) self
     (close fields-stream)
