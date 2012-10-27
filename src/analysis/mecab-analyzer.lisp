@@ -11,8 +11,7 @@
       (setf tokens (info.read-eval-print.mecab:mecab
                     (etypecase input
                       (string input)
-                      (stream (series:collect 'string
-                                (series:scan-stream input #'read-char)))))))))
+                      (stream (stream-contents input))))))))
 
 (defmethod next-token ((self mecab-tokenizer))
   (with-slots (tokens position) self
