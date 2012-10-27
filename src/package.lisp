@@ -36,6 +36,7 @@
    #:mmap-directory
    #:standard-analyzer
    #:whitespace-analyzer
+   #:mecab-analyzer
    #:index-writer
    #:document
    #:add-field
