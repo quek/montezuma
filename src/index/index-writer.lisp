@@ -22,9 +22,8 @@
    (term-index-interval :initarg :term-index-interval)
    (similarity :initform (make-default-similarity))
    (segment-infos :initform (make-instance 'segment-infos))
-   ;; FIXME write-lock
-   (ram-directory)
-   (info-stream :initform nil :initarg :info-stream :accessor info-stream))
+   (info-stream :initform nil :initarg :info-stream :accessor info-stream)
+   (write-lock))
   (:default-initargs
    :close-dir-p          NIL
     :use-compound-file-p T
@@ -35,12 +34,14 @@
     :max-field-length    *index-writer-default-max-field-length*
     :term-index-interval *index-writer-default-term-index-interval*))
 
+(define-condition lock-obtain-failed-error (error)
+  ())
+
 (defmethod initialize-instance :after ((self index-writer) &key (create-p NIL) (create-if-missing-p NIL) &allow-other-keys)
-  (with-slots (directory ram-directory segment-infos) self
-    (if (null directory)
-	(setf directory (make-instance 'ram-directory))
-	(when (not (typep directory 'directory))
-	  (setf directory (make-fs-directory directory :create-p create-p))))
+  (with-slots (write-lock directory ram-directory segment-infos) self
+    (setf write-lock (make-lock directory *index-writer-write-lock-name*))
+    (unless (obtain write-lock *index-writer-write-lock-timeout*)
+      (error 'too-many-clauses-error))
     (if create-p
 	(write-segment-infos segment-infos directory)
 	;; FIXME: This really isn't the best way of doing this.
@@ -48,13 +49,29 @@
 	  (error (e)
 	    (if create-if-missing-p
 		(write-segment-infos segment-infos directory)
-		(error e)))))
-    (setf ram-directory (make-instance 'ram-directory))))
+		(error e)))))))
+
+
+(defmethod document-writer ((self index-writer))
+  (let ((document-writer (thread-local self 'document-writer)))
+    (or document-writer
+        (setf (thread-local self 'document-writer)
+              (with-slots (analyzer similarity max-field-length term-index-interval) self
+               (make-instance 'document-writer
+                              :directory (make-instance 'ram-directory)
+                              :analyzer analyzer
+                              :similarity similarity
+                              :max-field-length max-field-length
+                              :term-index-interval term-index-interval))))))
+
+(defmethod (setf document-writer) (value (self index-writer))
+  (setf (thread-local self 'document-writer) value))
+
 
 (defmethod close ((self index-writer))
   (flush-ram-segments self)
-  (with-slots (ram-directory close-dir-p directory) self
-    (close ram-directory)
+  (with-slots (close-dir-p directory write-lock) self
+    (release write-lock)
     (when close-dir-p
       (close directory))))
 
@@ -69,16 +86,11 @@
 (defgeneric add-document-to-index-writer (index-writer document &optional analyzer))
 
 (defmethod add-document-to-index-writer ((self index-writer) document &optional (analyzer nil analyzer-supplied-p))
-  (with-slots (ram-directory similarity max-field-length term-index-interval info-stream
+  (with-slots (similarity max-field-length term-index-interval info-stream
 			     segment-infos) self
     (unless analyzer-supplied-p
       (setf analyzer (slot-value self 'analyzer)))
-    (let ((dw (make-instance 'document-writer
-			     :directory ram-directory
-			     :analyzer analyzer
-			     :similarity similarity
-			     :max-field-length max-field-length
-			     :term-index-interval term-index-interval))
+    (let ((dw (document-writer self))
 	  (segment-name (new-segment-name self)))
       (setf (info-stream dw) info-stream)
       (add-document-to-writer dw segment-name document)
@@ -87,7 +99,7 @@
 			(make-instance 'segment-info
 				       :name segment-name
 				       :doc-count 1
-				       :directory ram-directory))
+				       :directory (directory dw)))
       (maybe-merge-segments self))))
 
 
@@ -164,9 +176,10 @@
 (defgeneric flush-ram-segments (index-writer))
 
 (defmethod flush-ram-segments ((self index-writer))
-  (with-slots (segment-infos ram-directory merge-factor) self
+  (with-slots (segment-infos merge-factor) self
     (let ((min-segment (- (size segment-infos) 1))
-	  (doc-count 0))
+	  (doc-count 0)
+          (ram-directory (directory (document-writer self))))
       (while (and (>= min-segment 0)
 		  (eq (directory (segment-info segment-infos min-segment)) ram-directory))
 	(incf doc-count (doc-count (segment-info segment-infos min-segment)))
@@ -201,11 +214,12 @@
 (defgeneric merge-segments (index-writer min-segment &optional max-segment))
 
 (defmethod merge-segments ((self index-writer) min-segment &optional (max-segment nil max-segment-supplied-p))
-  (with-slots (segment-infos info-stream term-index-interval directory ram-directory use-compound-file-p) self
+  (with-slots (segment-infos info-stream term-index-interval directory use-compound-file-p) self
     (unless max-segment-supplied-p
       (setf max-segment (size segment-infos)))
     (let ((segments-to-delete '())
-	  (merged-name (new-segment-name self)))
+	  (merged-name (new-segment-name self))
+          (ram-directory (directory (document-writer self))))
       (when info-stream
 	(format info-stream "~&Merging segments from ~S to ~S"
 		min-segment (- max-segment 1)))

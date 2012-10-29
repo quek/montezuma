@@ -105,9 +105,7 @@
 
 (defmethod make-lock ((self ram-directory) name)
   (with-slots (lock-prefix) self
-    (make-instance 'ram-lock
-		   :name (format nil "~A~A" lock-prefix (normalize-file-name name))
-		   :dir self)))
+    (make-instance 'ram-lock)))
 
 (defmethod close ((self ram-directory))
   )

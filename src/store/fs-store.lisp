@@ -169,4 +169,8 @@
     (file-position file pos)))
 
 
-
+(defmethod make-lock ((self fs-directory) name)
+  (with-slots (path) self
+    (make-instance 'simple-fs-lock
+                   :lock-dir path
+                   :lock-name name)))

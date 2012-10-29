@@ -1,7 +1,7 @@
 (in-package #:montezuma)
 
 (defclass document-writer ()
-  ((directory :initarg :directory)
+  ((directory :initarg :directory :reader directory)
    (analyzer :initarg :analyzer)
    (similarity :initarg :similarity)
    (max-field-length :initarg :max-field-length)
