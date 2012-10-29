@@ -355,17 +355,17 @@
 
 (defmethod add-indexes ((self index) &rest indexes)
   (when (> (length indexes) 0)
-    (when (typep (elt indexes 0) 'index)
-      (setf indexes (map 'vector #'reader indexes)))
-    (cond ((typep (elt indexes 0) 'index-reader)
+    (when (typep (car indexes) 'index)
+      (setf indexes (mapcar #'reader indexes)))
+    (cond ((typep (car indexes) 'index-reader)
 	   (let ((reader (reader self)))
 	     (setf indexes (remove reader indexes)))
 	   (add-indexes-readers (writer self) indexes))
-	  ((typep (elt indexes 0) 'directory)
+	  ((typep (car indexes) 'directory)
 	   (setf indexes (remove (slot-value self 'dir) indexes))
 	   (apply #'add-indexes (writer self) indexes))
 	  (T
-	   (error "Unknown index type ~S when trying to merge indexes." (elt indexes 0))))))
+	   (error "Unknown index type ~S when trying to merge indexes." (car indexes))))))
 
 (defgeneric persist (index directory &key create-p))
 

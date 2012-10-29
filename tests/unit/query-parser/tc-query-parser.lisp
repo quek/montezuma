@@ -108,10 +108,9 @@
 	      (:BOOLEAN-QUERY
 	       ((:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "john"))
 		(:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "email"))
-		(:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "is"))
+		(:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "")) ;is is stop word
 		(:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "jjwiseman@yahoo.com"))
-		(:BOOLEAN-CLAUSE :SHOULD-OCCUR
-				 (:PHRASE-QUERY "*" (("mail" . 1) ("to" . 1)))))))
+		(:BOOLEAN-CLAUSE :SHOULD-OCCUR (:TERM-QUERY "*" "mail"))))) ;to is stop word
 	     ("+abc" (:BOOLEAN-QUERY ((:BOOLEAN-CLAUSE :MUST-OCCUR (:TERM-QUERY "*" "abc")))))
 	     ("abc +def ghi"
 	      (:BOOLEAN-QUERY

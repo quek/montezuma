@@ -379,7 +379,7 @@
 		(size top-docs)
 		0)
 	  (let ((iw (make-instance 'index-writer
-				   :directory *test-directory-path*
+				   :directory (make-fs-directory *test-directory-path*)
 				   :analyzer (make-instance 'whitespace-analyzer)))
 		(doc (make-instance 'document)))
 	    (add-field doc (make-field "f" "content3" :stored T :index :tokenized))
